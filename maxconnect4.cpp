@@ -11,6 +11,9 @@
 //function prototypes
 void countScore(gameStatus &currentScoreGame);
 
+//ai play minimax, minPlayer, maxPlayer, orderMoves, evalfunction  *****TODO********
+
+
 // Output current game status to console
 void printGameBoard(gameStatus &currentPrintGame)
 {
@@ -127,9 +130,44 @@ int main(int argc, char ** argv)
         char  cpuOut[13] = "computer.txt";
         char  humanTurn[11] = "human-next";
         char  cpuTurn[14] = "computer-next";
+        long human(0), cpu(0);
         gameStatus currentGame;	  
         currentGame.gameFile = fopen(input, "r");
-        while(currentGame.pieceCount < 42){
+          char current = 0;
+          int i, j;
+          if (currentGame.gameFile != 0){
+            for(i = 0; i < 6; i++){
+              for(j = 0; j < 7; j++){
+                do {
+                  current = getc(currentGame.gameFile);
+                } while ((current == ' ') || (current == '\n') || (current == '\r'));
+
+                currentGame.gameBoard[i][j] = current - 48;
+                if(currentGame.gameBoard[i][j] > 0){
+                    currentGame.pieceCount++;
+                }
+              }
+            }
+         
+            do {
+              current = getc(currentGame.gameFile);
+            } while ((current == ' ') || (current == '\n') || (current == '\r'));
+            
+            currentGame.currentTurn = current - 48;
+            fclose(currentGame.gameFile);
+          }
+
+
+        if(strcmp(next_to_move, humanTurn) == 0){ 
+            human = currentGame.currentTurn;
+            if(currentGame.currentTurn == 1) cpu = 2;
+            else cpu = 1;
+        } else if (strcmp(next_to_move, cpuTurn) == 0){ 
+            cpu = currentGame.currentTurn;
+            if(currentGame.currentTurn == 1) human = 2;
+            else human = 1;
+        }
+       while(currentGame.pieceCount < 42){
            //print board before move and the score
             printf("\nMaxConnect-4 game\n");
             printf("Current Board:\n");
@@ -138,11 +176,11 @@ int main(int argc, char ** argv)
             printf("Score: Player 1 = %d, Player 2 = %d\n\n", currentGame.player1Score, currentGame.player2Score);
     
             if(strcmp(next_to_move, "computer-next") == 0){
-                currentGame.currentTurn = 2;
+                currentGame.currentTurn = cpu;
                 std::cout << "CPU plays:" << std::endl;    
                 aiPlayRand(currentGame);
                 currentGame.gameFile = fopen(cpuOut, "w");
-                currentGame.currentTurn = 1;
+                currentGame.currentTurn = human;
                 if (currentGame.gameFile != 0){
                     printGameBoardToFile(currentGame);
                     fclose(currentGame.gameFile);
@@ -152,7 +190,7 @@ int main(int argc, char ** argv)
                 next_to_move = humanTurn;
             } else if (strcmp(next_to_move, "human-next") == 0){
                 //make sure that it wont break if input file has current turn set with one number but human/comp player set at prompt to be opposite
-                currentGame.currentTurn = 1;
+                currentGame.currentTurn = human;
                 int move(-1);
                 std::cout << "3n73r y0ur m0v3, hum4n...(column number 0 - 6)" << std::endl;
                 std::cin >> move;
@@ -161,7 +199,7 @@ int main(int argc, char ** argv)
                     std::cin >> move;
                 }
                 currentGame.gameFile = fopen(humanOut, "w");
-                currentGame.currentTurn = 2;
+                currentGame.currentTurn = cpu;
                 if (currentGame.gameFile != 0){
                     printGameBoardToFile(currentGame);
                     fclose(currentGame.gameFile);
