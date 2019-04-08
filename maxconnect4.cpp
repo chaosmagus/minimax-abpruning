@@ -5,13 +5,60 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <vector>
 #include <iostream>
 #include "gameStatus.hpp"
+using namespace std;
 
 //function prototypes
 void countScore(gameStatus &currentScoreGame);
+int getUtility(gameStatus currentUtility);
+vector<int> orderMoves(gameStatus currentMove);
+int checkPlay(int column, gameStatus currentCheckPlay);
+
 
 //ai play minimax, minPlayer, maxPlayer, orderMoves, evalfunction  *****TODO********
+
+//utiltty function
+int getUtility(gameStatus utilityGame, long aiID){
+    countScore(utilityGame);
+    if(aiID == 2) return (utilityGame.player2Score - utilityGame.player1Score);
+    return (utilityGame.player1Score - utilityGame.player2Score);
+}  
+
+//function to order nodes for expansion
+//strategy is that moves played closer to the center-vertical axis are more valuable
+vector<int> orderMoves(gameStatus currentMove){
+    vector<int> moveOrder;
+    srand(time(NULL)); 
+    int random = rand() % 2;
+    if((checkPlay(3, currentMove)) == 1) moveOrder.push_back(3);
+
+    if(random == 1){
+        if((checkPlay(2, currentMove)) == 1) moveOrder.push_back(2);
+        if((checkPlay(4, currentMove)) == 1) moveOrder.push_back(4);    
+    } else {
+        if((checkPlay(4, currentMove)) == 1) moveOrder.push_back(4);    
+        if((checkPlay(2, currentMove)) == 1) moveOrder.push_back(2);
+    } 
+    random =  rand() % 2;
+    if(random == 1){
+        if((checkPlay(1, currentMove)) == 1) moveOrder.push_back(1);
+        if((checkPlay(5, currentMove)) == 1) moveOrder.push_back(5);    
+    } else {
+        if((checkPlay(5, currentMove)) == 1) moveOrder.push_back(5);    
+        if((checkPlay(1, currentMove)) == 1) moveOrder.push_back(1);
+    } 
+    random =  rand() % 2;
+    if(random == 1){
+        if((checkPlay(0, currentMove)) == 1) moveOrder.push_back(0);
+        if((checkPlay(6, currentMove)) == 1) moveOrder.push_back(6);    
+    } else {
+        if((checkPlay(6, currentMove)) == 1) moveOrder.push_back(6);    
+        if((checkPlay(0, currentMove)) == 1) moveOrder.push_back(0);
+    } 
+    return moveOrder;
+}
 
 
 // Output current game status to console
@@ -69,7 +116,7 @@ int playPiece(int column, gameStatus &currentPlayGame){
   return 0;
 }
 
-int checkPlay(int column, gameStatus &currentCheckPlay){
+int checkPlay(int column, gameStatus currentCheckPlay){
 	// if column full, return 0
         if(column < 0) return 0;
 	if(currentCheckPlay.gameBoard[0][column] != 0){
@@ -90,7 +137,8 @@ int checkPlay(int column, gameStatus &currentCheckPlay){
 // The AI section.  Currently plays randomly.
 void aiPlayRand(gameStatus &currentGame)
 {	
-	int randColumn = (int) rand() % 7;
+        //srand (time(NULL));
+	int randColumn = rand() % 7;
 	int result = 0;
 	result = playPiece(randColumn, currentGame);
 	if(result == 0){
@@ -126,6 +174,7 @@ int main(int argc, char ** argv)
         //get command line inputs for next to move and file
         char * input = command_line[2]; 
         char * next_to_move = command_line [3];
+        int depthLimit = atoi(command_line[4]);
         char  humanOut[10] = "human.txt";
         char  cpuOut[13] = "computer.txt";
         char  humanTurn[11] = "human-next";
@@ -174,7 +223,7 @@ int main(int argc, char ** argv)
             printGameBoard(currentGame);
             countScore(currentGame);
             printf("Score: Player 1 = %d, Player 2 = %d\n\n", currentGame.player1Score, currentGame.player2Score);
-    
+            cout << "Board Utility: " << getUtility(currentGame, cpu)  << endl << endl;    
             if(strcmp(next_to_move, "computer-next") == 0){
                 currentGame.currentTurn = cpu;
                 std::cout << "CPU plays:" << std::endl;    
