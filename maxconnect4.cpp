@@ -6,52 +6,13 @@
 #include <time.h>
 #include <string.h>
 #include <iostream>
+#include "gameStatus.hpp"
 
-
-class gameStatus 	
-{ 
-private:
-  long * gameData;
-
-public: 
-  long * gameBoard[6];
-  long currentTurn;
-  int player1Score;
-  int player2Score;
-  int pieceCount;
-  FILE *gameFile;
-
-  gameStatus()
-  {
-    gameData = new long[42];
-    gameBoard[0] = &(gameData[0]);
-    gameBoard[1] = &(gameData[7]);
-    gameBoard[2] = &(gameData[14]);
-    gameBoard[3] = &(gameData[21]);
-    gameBoard[4] = &(gameData[28]);
-    gameBoard[5] = &(gameData[35]);
-
-    int i;
-    for (i = 0; i < 42; i++)
-    {
-      gameData[i] = 0;
-    }
-
-    currentTurn = 1;
-    player1Score = 0;
-    player2Score = 0;
-    pieceCount = 0;
-    gameFile = 0;
-  }
-
-  ~gameStatus()
-  {
-    delete [] gameData;
-  }
-};
+//function prototypes
+void countScore(gameStatus &currentScoreGame);
 
 // Output current game status to console
-void printGameBoard(gameStatus &currentGame)
+void printGameBoard(gameStatus &currentPrintGame)
 {
   int i = 0;
   int j = 0;
@@ -61,7 +22,7 @@ void printGameBoard(gameStatus &currentGame)
     printf(" | ");
     for(j = 0; j < 7; j++)
     {
-      printf("%li ", currentGame.gameBoard[i][j]);
+      printf("%li ", currentPrintGame.gameBoard[i][j]);
     }
     printf("| \n");
   }
@@ -69,7 +30,7 @@ void printGameBoard(gameStatus &currentGame)
 }
 
 // Output current game status to file
-void printGameBoardToFile(gameStatus &currentGame)
+void printGameBoardToFile(gameStatus &currentFileGame)
 {
 	int i = 0;
 	int j = 0;
@@ -77,44 +38,62 @@ void printGameBoardToFile(gameStatus &currentGame)
 	{	
 		for(j = 0; j < 7; j++)
 		{
-			fprintf(currentGame.gameFile, "%li", currentGame.gameBoard[i][j]);
+			fprintf(currentFileGame.gameFile, "%li", currentFileGame.gameBoard[i][j]);
 		}
-		fprintf(currentGame.gameFile, "\r\n");
+		fprintf(currentFileGame.gameFile, "\r\n");
 	}
-	fprintf(currentGame.gameFile, "%d\r\n", currentGame.currentTurn);
+	fprintf(currentFileGame.gameFile, "%ld\r\n", currentFileGame.currentTurn);
 }
 
 // Given a column and which player it is, 
 // place that player's piece in the requested column
-int playPiece(int column, gameStatus &currentGame){
+int playPiece(int column, gameStatus &currentPlayGame){
 	// if column full, return 0
         if(column < 0) return 0;
-	if(currentGame.gameBoard[0][column] != 0){
+	if(currentPlayGame.gameBoard[0][column] != 0){
 		return 0;
         }
 	int i;
 	
         // starting at the bottom of the board, place the piece into the first empty spot
 	for(i = 5; i >= 0; i--){
-		if(currentGame.gameBoard[i][column] == 0){
-			currentGame.gameBoard[i][column] = currentGame.currentTurn;
-			currentGame.pieceCount++;
+		if(currentPlayGame.gameBoard[i][column] == 0){
+			currentPlayGame.gameBoard[i][column] = currentPlayGame.currentTurn;
+			currentPlayGame.pieceCount++;
 			return 1;
 		}
 	}
   return 0;
 }
 
+int checkPlay(int column, gameStatus &currentCheckPlay){
+	// if column full, return 0
+        if(column < 0) return 0;
+	if(currentCheckPlay.gameBoard[0][column] != 0){
+		return 0;
+        }
+	int i;
+	
+        // starting at the bottom of the board, check for the first empty spot
+	for(i = 5; i >= 0; i--){
+		if(currentCheckPlay.gameBoard[i][column] == 0){
+			return 1;
+		}
+	}
+  return 0;
+}
+
+
 // The AI section.  Currently plays randomly.
-void aiPlay(gameStatus &currentGame)
+void aiPlayRand(gameStatus &currentGame)
 {	
 	int randColumn = (int) rand() % 7;
 	int result = 0;
 	result = playPiece(randColumn, currentGame);
 	if(result == 0){
-	    aiPlay(currentGame);
+	    aiPlayRand(currentGame);
         } else {
-           printf("\n\nmove %li: Player %li, column %li\n", 
+           printf("\n\nmove %d: Player %li, column %d\n", 
            currentGame.pieceCount, currentGame.currentTurn, randColumn+1);
 		if(currentGame.currentTurn == 1)
 			currentGame.currentTurn = 2;
@@ -123,221 +102,6 @@ void aiPlay(gameStatus &currentGame)
   }
 }
 
-void countScore(gameStatus &currentGame)
-{
-  currentGame.player1Score = 0; 
-  currentGame.player2Score = 0; 
-
-  //check horizontally
-  int i;
-  for(i = 0; i < 6; i++)
-  {
-		//check player 1
-		if(currentGame.gameBoard[i][0] == 1 && currentGame.gameBoard[i][1] == 1 
-			&& currentGame.gameBoard[i][2] == 1 && currentGame.gameBoard[i][3] == 1)
-			{currentGame.player1Score++;}
-		if(currentGame.gameBoard[i][1] == 1 && currentGame.gameBoard[i][2] == 1 
-			&& currentGame.gameBoard[i][3] == 1 && currentGame.gameBoard[i][4] == 1)
-			{currentGame.player1Score++;}
-		if(currentGame.gameBoard[i][2] == 1 && currentGame.gameBoard[i][3] == 1 
-			&& currentGame.gameBoard[i][4] == 1 && currentGame.gameBoard[i][5] == 1)
-			{currentGame.player1Score++;}
-		if(currentGame.gameBoard[i][3] == 1 && currentGame.gameBoard[i][4] == 1 
-			&& currentGame.gameBoard[i][5] == 1 && currentGame.gameBoard[i][6] == 1)
-			{currentGame.player1Score++;}
-		//check player 2
-		if(currentGame.gameBoard[i][0] == 2 && currentGame.gameBoard[i][1] == 2 
-			&& currentGame.gameBoard[i][2] == 2 && currentGame.gameBoard[i][3] == 2)
-			{currentGame.player2Score++;}
-		if(currentGame.gameBoard[i][1] == 2 && currentGame.gameBoard[i][2] == 2 
-			&& currentGame.gameBoard[i][3] == 2 && currentGame.gameBoard[i][4] == 2)
-			{currentGame.player2Score++;}
-		if(currentGame.gameBoard[i][2] == 2 && currentGame.gameBoard[i][3] == 2 
-			&& currentGame.gameBoard[i][4] == 2 && currentGame.gameBoard[i][5] == 2)
-			{currentGame.player2Score++;}
-		if(currentGame.gameBoard[i][3] == 2 && currentGame.gameBoard[i][4] == 2 
-			&& currentGame.gameBoard[i][5] == 2 && currentGame.gameBoard[i][6] == 2)
-			{currentGame.player2Score++;}
-	}
-
-	//check vertically
-	int j;
-	for(j = 0; j < 7; j++)
-	{
-		//check player 1
-		if(currentGame.gameBoard[0][j] == 1 && currentGame.gameBoard[1][j] == 1 
-			&& currentGame.gameBoard[2][j] == 1 && currentGame.gameBoard[3][j] == 1)
-			{currentGame.player1Score++;}
-		if(currentGame.gameBoard[1][j] == 1 && currentGame.gameBoard[2][j] == 1 
-			&& currentGame.gameBoard[3][j] == 1 && currentGame.gameBoard[4][j] == 1)
-			{currentGame.player1Score++;}
-		if(currentGame.gameBoard[2][j] == 1 && currentGame.gameBoard[3][j] == 1 
-			&& currentGame.gameBoard[4][j] == 1 && currentGame.gameBoard[5][j] == 1)
-			{currentGame.player1Score++;}
-		//check player 2
-		if(currentGame.gameBoard[0][j] == 2 && currentGame.gameBoard[1][j] == 2 
-			&& currentGame.gameBoard[2][j] == 2 && currentGame.gameBoard[3][j] == 2)
-			{currentGame.player2Score++;}
-		if(currentGame.gameBoard[1][j] == 2 && currentGame.gameBoard[2][j] == 2 
-			&& currentGame.gameBoard[3][j] == 2 && currentGame.gameBoard[4][j] == 2)
-			{currentGame.player2Score++;}
-		if(currentGame.gameBoard[2][j] == 2 && currentGame.gameBoard[3][j] == 2 
-			&& currentGame.gameBoard[4][j] == 2 && currentGame.gameBoard[5][j] == 2)
-			{currentGame.player2Score++;}
-	}
-
-	//check diagonally
-	
-	//check player 1
-	if(currentGame.gameBoard[2][0] == 1 && currentGame.gameBoard[3][1] == 1 
-		&& currentGame.gameBoard[4][2] == 1 && currentGame.gameBoard[5][3] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[1][0] == 1 && currentGame.gameBoard[2][1] == 1 
-		&& currentGame.gameBoard[3][2] == 1 && currentGame.gameBoard[4][3] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[2][1] == 1 && currentGame.gameBoard[3][2] == 1 
-		&& currentGame.gameBoard[4][3] == 1 && currentGame.gameBoard[5][4] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[0][0] == 1 && currentGame.gameBoard[1][1] == 1 
-		&& currentGame.gameBoard[2][2] == 1 && currentGame.gameBoard[3][3] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[1][1] == 1 && currentGame.gameBoard[2][2] == 1 
-		&& currentGame.gameBoard[3][3] == 1 && currentGame.gameBoard[4][4] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[2][2] == 1 && currentGame.gameBoard[3][3] == 1 
-		&& currentGame.gameBoard[4][4] == 1 && currentGame.gameBoard[5][5] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[0][1] == 1 && currentGame.gameBoard[1][2] == 1 
-		&& currentGame.gameBoard[2][3] == 1 && currentGame.gameBoard[3][4] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[1][2] == 1 && currentGame.gameBoard[2][3] == 1 
-		&& currentGame.gameBoard[3][4] == 1 && currentGame.gameBoard[4][5] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[2][3] == 1 && currentGame.gameBoard[3][4] == 1 
-		&& currentGame.gameBoard[4][5] == 1 && currentGame.gameBoard[5][6] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[0][2] == 1 && currentGame.gameBoard[1][3] == 1 
-		&& currentGame.gameBoard[2][4] == 1 && currentGame.gameBoard[3][5] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[1][3] == 1 && currentGame.gameBoard[2][4] == 1 
-		&& currentGame.gameBoard[3][5] == 1 && currentGame.gameBoard[4][6] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[0][3] == 1 && currentGame.gameBoard[1][4] == 1 
-		&& currentGame.gameBoard[2][5] == 1 && currentGame.gameBoard[3][6] == 1)
-			{currentGame.player1Score++;}
-
-	if(currentGame.gameBoard[0][3] == 1 && currentGame.gameBoard[1][2] == 1 
-		&& currentGame.gameBoard[2][1] == 1 && currentGame.gameBoard[3][0] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[0][4] == 1 && currentGame.gameBoard[1][3] == 1 
-		&& currentGame.gameBoard[2][2] == 1 && currentGame.gameBoard[3][1] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[1][3] == 1 && currentGame.gameBoard[2][2] == 1 
-		&& currentGame.gameBoard[3][1] == 1 && currentGame.gameBoard[4][0] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[0][5] == 1 && currentGame.gameBoard[1][4] == 1 
-		&& currentGame.gameBoard[2][3] == 1 && currentGame.gameBoard[3][2] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[1][4] == 1 && currentGame.gameBoard[2][3] == 1 
-		&& currentGame.gameBoard[3][2] == 1 && currentGame.gameBoard[4][1] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[2][3] == 1 && currentGame.gameBoard[3][2] == 1 
-		&& currentGame.gameBoard[4][1] == 1 && currentGame.gameBoard[5][0] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[0][6] == 1 && currentGame.gameBoard[1][5] == 1 
-		&& currentGame.gameBoard[2][4] == 1 && currentGame.gameBoard[3][3] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[1][5] == 1 && currentGame.gameBoard[2][4] == 1 
-		&& currentGame.gameBoard[3][3] == 1 && currentGame.gameBoard[4][2] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[2][4] == 1 && currentGame.gameBoard[3][3] == 1 
-		&& currentGame.gameBoard[4][2] == 1 && currentGame.gameBoard[5][1] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[1][6] == 1 && currentGame.gameBoard[2][5] == 1 
-		&& currentGame.gameBoard[3][4] == 1 && currentGame.gameBoard[4][3] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[2][5] == 1 && currentGame.gameBoard[3][4] == 1 
-		&& currentGame.gameBoard[4][3] == 1 && currentGame.gameBoard[5][2] == 1)
-			{currentGame.player1Score++;}
-	if(currentGame.gameBoard[2][6] == 1 && currentGame.gameBoard[3][5] == 1 
-		&& currentGame.gameBoard[4][4] == 1 && currentGame.gameBoard[5][3] == 1)
-			{currentGame.player1Score++;}
-		
-	//check player 2
-	if(currentGame.gameBoard[2][0] == 2 && currentGame.gameBoard[3][1] == 2 
-		&& currentGame.gameBoard[4][2] == 2 && currentGame.gameBoard[5][3] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[1][0] == 2 && currentGame.gameBoard[2][1] == 2 
-		&& currentGame.gameBoard[3][2] == 2 && currentGame.gameBoard[4][3] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[2][1] == 2 && currentGame.gameBoard[3][2] == 2 
-		&& currentGame.gameBoard[4][3] == 2 && currentGame.gameBoard[5][4] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[0][0] == 2 && currentGame.gameBoard[1][1] == 2 
-		&& currentGame.gameBoard[2][2] == 2 && currentGame.gameBoard[3][3] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[1][1] == 2 && currentGame.gameBoard[2][2] == 2 
-		&& currentGame.gameBoard[3][3] == 2 && currentGame.gameBoard[4][4] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[2][2] == 2 && currentGame.gameBoard[3][3] == 2 
-		&& currentGame.gameBoard[4][4] == 2 && currentGame.gameBoard[5][5] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[0][1] == 2 && currentGame.gameBoard[1][2] == 2 
-		&& currentGame.gameBoard[2][3] == 2 && currentGame.gameBoard[3][4] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[1][2] == 2 && currentGame.gameBoard[2][3] == 2 
-		&& currentGame.gameBoard[3][4] == 2 && currentGame.gameBoard[4][5] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[2][3] == 2 && currentGame.gameBoard[3][4] == 2 
-		&& currentGame.gameBoard[4][5] == 2 && currentGame.gameBoard[5][6] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[0][2] == 2 && currentGame.gameBoard[1][3] == 2 
-		&& currentGame.gameBoard[2][4] == 2 && currentGame.gameBoard[3][5] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[1][3] == 2 && currentGame.gameBoard[2][4] == 2 
-		&& currentGame.gameBoard[3][5] == 2 && currentGame.gameBoard[4][6] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[0][3] == 2 && currentGame.gameBoard[1][4] == 2 
-		&& currentGame.gameBoard[2][5] == 2 && currentGame.gameBoard[3][6] == 2)
-			{currentGame.player2Score++;}
-
-	if(currentGame.gameBoard[0][3] == 2 && currentGame.gameBoard[1][2] == 2 
-		&& currentGame.gameBoard[2][1] == 2 && currentGame.gameBoard[3][0] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[0][4] == 2 && currentGame.gameBoard[1][3] == 2 
-		&& currentGame.gameBoard[2][2] == 2 && currentGame.gameBoard[3][1] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[1][3] == 2 && currentGame.gameBoard[2][2] == 2
-		&& currentGame.gameBoard[3][1] == 2 && currentGame.gameBoard[4][0] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[0][5] == 2 && currentGame.gameBoard[1][4] == 2 
-		&& currentGame.gameBoard[2][3] == 2 && currentGame.gameBoard[3][2] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[1][4] == 2 && currentGame.gameBoard[2][3] == 2 
-		&& currentGame.gameBoard[3][2] == 2 && currentGame.gameBoard[4][1] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[2][3] == 2 && currentGame.gameBoard[3][2] == 2 
-		&& currentGame.gameBoard[4][1] == 2 && currentGame.gameBoard[5][0] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[0][6] == 2 && currentGame.gameBoard[1][5] == 2 
-		&& currentGame.gameBoard[2][4] == 2 && currentGame.gameBoard[3][3] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[1][5] == 2 && currentGame.gameBoard[2][4] == 2 
-		&& currentGame.gameBoard[3][3] == 2 && currentGame.gameBoard[4][2] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[2][4] == 2 && currentGame.gameBoard[3][3] == 2 
-		&& currentGame.gameBoard[4][2] == 2 && currentGame.gameBoard[5][1] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[1][6] == 2 && currentGame.gameBoard[2][5] == 2 
-		&& currentGame.gameBoard[3][4] == 2 && currentGame.gameBoard[4][3] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[2][5] == 2 && currentGame.gameBoard[3][4] == 2 
-		&& currentGame.gameBoard[4][3] == 2 && currentGame.gameBoard[5][2] == 2)
-			{currentGame.player2Score++;}
-	if(currentGame.gameBoard[2][6] == 2 && currentGame.gameBoard[3][5] == 2 
-		&& currentGame.gameBoard[4][4] == 2 && currentGame.gameBoard[5][3] == 2)
-			{currentGame.player2Score++;}
-}
 
 
 int main(int argc, char ** argv)
@@ -361,6 +125,8 @@ int main(int argc, char ** argv)
         char * next_to_move = command_line [3];
         char  humanOut[10] = "human.txt";
         char  cpuOut[13] = "computer.txt";
+        char  humanTurn[11] = "human-next";
+        char  cpuTurn[14] = "computer-next";
         gameStatus currentGame;	  
         currentGame.gameFile = fopen(input, "r");
         while(currentGame.pieceCount < 42){
@@ -374,7 +140,7 @@ int main(int argc, char ** argv)
             if(strcmp(next_to_move, "computer-next") == 0){
                 currentGame.currentTurn = 2;
                 std::cout << "CPU plays:" << std::endl;    
-                aiPlay(currentGame);
+                aiPlayRand(currentGame);
                 currentGame.gameFile = fopen(cpuOut, "w");
                 currentGame.currentTurn = 1;
                 if (currentGame.gameFile != 0){
@@ -383,7 +149,7 @@ int main(int argc, char ** argv)
                 } else{
                     printf("error: could not open output file %s\n", cpuOut);
                 }
-                next_to_move = "human-next";
+                next_to_move = humanTurn;
             } else if (strcmp(next_to_move, "human-next") == 0){
                 //make sure that it wont break if input file has current turn set with one number but human/comp player set at prompt to be opposite
                 currentGame.currentTurn = 1;
@@ -402,7 +168,7 @@ int main(int argc, char ** argv)
                 } else{
                     printf("error: could not open output file %s\n", humanOut);
                 }
-                next_to_move = "computer-next";
+                next_to_move = cpuTurn;
             } else {
                 std::cout << "please enter 'computer-next' or 'human-next' for this turn" << std::endl;
             }
@@ -469,7 +235,7 @@ int main(int argc, char ** argv)
     return 1;
   }
 
-  aiPlay(currentGame);
+  aiPlayRand(currentGame);
   printf("game state after move:\n");
   printGameBoard(currentGame);
   countScore(currentGame);
@@ -488,3 +254,219 @@ int main(int argc, char ** argv)
 
   return 1;
 }
+void countScore(gameStatus &currentScoreGame)
+{
+  currentScoreGame.player1Score = 0; 
+  currentScoreGame.player2Score = 0; 
+
+  //check horizontally
+  int i;
+  for(i = 0; i < 6; i++)
+  {
+		//check player 1
+		if(currentScoreGame.gameBoard[i][0] == 1 && currentScoreGame.gameBoard[i][1] == 1 
+			&& currentScoreGame.gameBoard[i][2] == 1 && currentScoreGame.gameBoard[i][3] == 1)
+			{currentScoreGame.player1Score++;}
+		if(currentScoreGame.gameBoard[i][1] == 1 && currentScoreGame.gameBoard[i][2] == 1 
+			&& currentScoreGame.gameBoard[i][3] == 1 && currentScoreGame.gameBoard[i][4] == 1)
+			{currentScoreGame.player1Score++;}
+		if(currentScoreGame.gameBoard[i][2] == 1 && currentScoreGame.gameBoard[i][3] == 1 
+			&& currentScoreGame.gameBoard[i][4] == 1 && currentScoreGame.gameBoard[i][5] == 1)
+			{currentScoreGame.player1Score++;}
+		if(currentScoreGame.gameBoard[i][3] == 1 && currentScoreGame.gameBoard[i][4] == 1 
+			&& currentScoreGame.gameBoard[i][5] == 1 && currentScoreGame.gameBoard[i][6] == 1)
+			{currentScoreGame.player1Score++;}
+		//check player 2
+		if(currentScoreGame.gameBoard[i][0] == 2 && currentScoreGame.gameBoard[i][1] == 2 
+			&& currentScoreGame.gameBoard[i][2] == 2 && currentScoreGame.gameBoard[i][3] == 2)
+			{currentScoreGame.player2Score++;}
+		if(currentScoreGame.gameBoard[i][1] == 2 && currentScoreGame.gameBoard[i][2] == 2 
+			&& currentScoreGame.gameBoard[i][3] == 2 && currentScoreGame.gameBoard[i][4] == 2)
+			{currentScoreGame.player2Score++;}
+		if(currentScoreGame.gameBoard[i][2] == 2 && currentScoreGame.gameBoard[i][3] == 2 
+			&& currentScoreGame.gameBoard[i][4] == 2 && currentScoreGame.gameBoard[i][5] == 2)
+			{currentScoreGame.player2Score++;}
+		if(currentScoreGame.gameBoard[i][3] == 2 && currentScoreGame.gameBoard[i][4] == 2 
+			&& currentScoreGame.gameBoard[i][5] == 2 && currentScoreGame.gameBoard[i][6] == 2)
+			{currentScoreGame.player2Score++;}
+	}
+
+	//check vertically
+	int j;
+	for(j = 0; j < 7; j++)
+	{
+		//check player 1
+		if(currentScoreGame.gameBoard[0][j] == 1 && currentScoreGame.gameBoard[1][j] == 1 
+			&& currentScoreGame.gameBoard[2][j] == 1 && currentScoreGame.gameBoard[3][j] == 1)
+			{currentScoreGame.player1Score++;}
+		if(currentScoreGame.gameBoard[1][j] == 1 && currentScoreGame.gameBoard[2][j] == 1 
+			&& currentScoreGame.gameBoard[3][j] == 1 && currentScoreGame.gameBoard[4][j] == 1)
+			{currentScoreGame.player1Score++;}
+		if(currentScoreGame.gameBoard[2][j] == 1 && currentScoreGame.gameBoard[3][j] == 1 
+			&& currentScoreGame.gameBoard[4][j] == 1 && currentScoreGame.gameBoard[5][j] == 1)
+			{currentScoreGame.player1Score++;}
+		//check player 2
+		if(currentScoreGame.gameBoard[0][j] == 2 && currentScoreGame.gameBoard[1][j] == 2 
+			&& currentScoreGame.gameBoard[2][j] == 2 && currentScoreGame.gameBoard[3][j] == 2)
+			{currentScoreGame.player2Score++;}
+		if(currentScoreGame.gameBoard[1][j] == 2 && currentScoreGame.gameBoard[2][j] == 2 
+			&& currentScoreGame.gameBoard[3][j] == 2 && currentScoreGame.gameBoard[4][j] == 2)
+			{currentScoreGame.player2Score++;}
+		if(currentScoreGame.gameBoard[2][j] == 2 && currentScoreGame.gameBoard[3][j] == 2 
+			&& currentScoreGame.gameBoard[4][j] == 2 && currentScoreGame.gameBoard[5][j] == 2)
+			{currentScoreGame.player2Score++;}
+	}
+
+	//check diagonally
+	
+	//check player 1
+	if(currentScoreGame.gameBoard[2][0] == 1 && currentScoreGame.gameBoard[3][1] == 1 
+		&& currentScoreGame.gameBoard[4][2] == 1 && currentScoreGame.gameBoard[5][3] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[1][0] == 1 && currentScoreGame.gameBoard[2][1] == 1 
+		&& currentScoreGame.gameBoard[3][2] == 1 && currentScoreGame.gameBoard[4][3] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[2][1] == 1 && currentScoreGame.gameBoard[3][2] == 1 
+		&& currentScoreGame.gameBoard[4][3] == 1 && currentScoreGame.gameBoard[5][4] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[0][0] == 1 && currentScoreGame.gameBoard[1][1] == 1 
+		&& currentScoreGame.gameBoard[2][2] == 1 && currentScoreGame.gameBoard[3][3] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[1][1] == 1 && currentScoreGame.gameBoard[2][2] == 1 
+		&& currentScoreGame.gameBoard[3][3] == 1 && currentScoreGame.gameBoard[4][4] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[2][2] == 1 && currentScoreGame.gameBoard[3][3] == 1 
+		&& currentScoreGame.gameBoard[4][4] == 1 && currentScoreGame.gameBoard[5][5] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[0][1] == 1 && currentScoreGame.gameBoard[1][2] == 1 
+		&& currentScoreGame.gameBoard[2][3] == 1 && currentScoreGame.gameBoard[3][4] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[1][2] == 1 && currentScoreGame.gameBoard[2][3] == 1 
+		&& currentScoreGame.gameBoard[3][4] == 1 && currentScoreGame.gameBoard[4][5] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[2][3] == 1 && currentScoreGame.gameBoard[3][4] == 1 
+		&& currentScoreGame.gameBoard[4][5] == 1 && currentScoreGame.gameBoard[5][6] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[0][2] == 1 && currentScoreGame.gameBoard[1][3] == 1 
+		&& currentScoreGame.gameBoard[2][4] == 1 && currentScoreGame.gameBoard[3][5] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[1][3] == 1 && currentScoreGame.gameBoard[2][4] == 1 
+		&& currentScoreGame.gameBoard[3][5] == 1 && currentScoreGame.gameBoard[4][6] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[0][3] == 1 && currentScoreGame.gameBoard[1][4] == 1 
+		&& currentScoreGame.gameBoard[2][5] == 1 && currentScoreGame.gameBoard[3][6] == 1)
+			{currentScoreGame.player1Score++;}
+
+	if(currentScoreGame.gameBoard[0][3] == 1 && currentScoreGame.gameBoard[1][2] == 1 
+		&& currentScoreGame.gameBoard[2][1] == 1 && currentScoreGame.gameBoard[3][0] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[0][4] == 1 && currentScoreGame.gameBoard[1][3] == 1 
+		&& currentScoreGame.gameBoard[2][2] == 1 && currentScoreGame.gameBoard[3][1] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[1][3] == 1 && currentScoreGame.gameBoard[2][2] == 1 
+		&& currentScoreGame.gameBoard[3][1] == 1 && currentScoreGame.gameBoard[4][0] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[0][5] == 1 && currentScoreGame.gameBoard[1][4] == 1 
+		&& currentScoreGame.gameBoard[2][3] == 1 && currentScoreGame.gameBoard[3][2] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[1][4] == 1 && currentScoreGame.gameBoard[2][3] == 1 
+		&& currentScoreGame.gameBoard[3][2] == 1 && currentScoreGame.gameBoard[4][1] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[2][3] == 1 && currentScoreGame.gameBoard[3][2] == 1 
+		&& currentScoreGame.gameBoard[4][1] == 1 && currentScoreGame.gameBoard[5][0] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[0][6] == 1 && currentScoreGame.gameBoard[1][5] == 1 
+		&& currentScoreGame.gameBoard[2][4] == 1 && currentScoreGame.gameBoard[3][3] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[1][5] == 1 && currentScoreGame.gameBoard[2][4] == 1 
+		&& currentScoreGame.gameBoard[3][3] == 1 && currentScoreGame.gameBoard[4][2] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[2][4] == 1 && currentScoreGame.gameBoard[3][3] == 1 
+		&& currentScoreGame.gameBoard[4][2] == 1 && currentScoreGame.gameBoard[5][1] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[1][6] == 1 && currentScoreGame.gameBoard[2][5] == 1 
+		&& currentScoreGame.gameBoard[3][4] == 1 && currentScoreGame.gameBoard[4][3] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[2][5] == 1 && currentScoreGame.gameBoard[3][4] == 1 
+		&& currentScoreGame.gameBoard[4][3] == 1 && currentScoreGame.gameBoard[5][2] == 1)
+			{currentScoreGame.player1Score++;}
+	if(currentScoreGame.gameBoard[2][6] == 1 && currentScoreGame.gameBoard[3][5] == 1 
+		&& currentScoreGame.gameBoard[4][4] == 1 && currentScoreGame.gameBoard[5][3] == 1)
+			{currentScoreGame.player1Score++;}
+		
+	//check player 2
+	if(currentScoreGame.gameBoard[2][0] == 2 && currentScoreGame.gameBoard[3][1] == 2 
+		&& currentScoreGame.gameBoard[4][2] == 2 && currentScoreGame.gameBoard[5][3] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[1][0] == 2 && currentScoreGame.gameBoard[2][1] == 2 
+		&& currentScoreGame.gameBoard[3][2] == 2 && currentScoreGame.gameBoard[4][3] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[2][1] == 2 && currentScoreGame.gameBoard[3][2] == 2 
+		&& currentScoreGame.gameBoard[4][3] == 2 && currentScoreGame.gameBoard[5][4] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[0][0] == 2 && currentScoreGame.gameBoard[1][1] == 2 
+		&& currentScoreGame.gameBoard[2][2] == 2 && currentScoreGame.gameBoard[3][3] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[1][1] == 2 && currentScoreGame.gameBoard[2][2] == 2 
+		&& currentScoreGame.gameBoard[3][3] == 2 && currentScoreGame.gameBoard[4][4] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[2][2] == 2 && currentScoreGame.gameBoard[3][3] == 2 
+		&& currentScoreGame.gameBoard[4][4] == 2 && currentScoreGame.gameBoard[5][5] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[0][1] == 2 && currentScoreGame.gameBoard[1][2] == 2 
+		&& currentScoreGame.gameBoard[2][3] == 2 && currentScoreGame.gameBoard[3][4] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[1][2] == 2 && currentScoreGame.gameBoard[2][3] == 2 
+		&& currentScoreGame.gameBoard[3][4] == 2 && currentScoreGame.gameBoard[4][5] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[2][3] == 2 && currentScoreGame.gameBoard[3][4] == 2 
+		&& currentScoreGame.gameBoard[4][5] == 2 && currentScoreGame.gameBoard[5][6] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[0][2] == 2 && currentScoreGame.gameBoard[1][3] == 2 
+		&& currentScoreGame.gameBoard[2][4] == 2 && currentScoreGame.gameBoard[3][5] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[1][3] == 2 && currentScoreGame.gameBoard[2][4] == 2 
+		&& currentScoreGame.gameBoard[3][5] == 2 && currentScoreGame.gameBoard[4][6] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[0][3] == 2 && currentScoreGame.gameBoard[1][4] == 2 
+		&& currentScoreGame.gameBoard[2][5] == 2 && currentScoreGame.gameBoard[3][6] == 2)
+			{currentScoreGame.player2Score++;}
+
+	if(currentScoreGame.gameBoard[0][3] == 2 && currentScoreGame.gameBoard[1][2] == 2 
+		&& currentScoreGame.gameBoard[2][1] == 2 && currentScoreGame.gameBoard[3][0] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[0][4] == 2 && currentScoreGame.gameBoard[1][3] == 2 
+		&& currentScoreGame.gameBoard[2][2] == 2 && currentScoreGame.gameBoard[3][1] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[1][3] == 2 && currentScoreGame.gameBoard[2][2] == 2
+		&& currentScoreGame.gameBoard[3][1] == 2 && currentScoreGame.gameBoard[4][0] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[0][5] == 2 && currentScoreGame.gameBoard[1][4] == 2 
+		&& currentScoreGame.gameBoard[2][3] == 2 && currentScoreGame.gameBoard[3][2] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[1][4] == 2 && currentScoreGame.gameBoard[2][3] == 2 
+		&& currentScoreGame.gameBoard[3][2] == 2 && currentScoreGame.gameBoard[4][1] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[2][3] == 2 && currentScoreGame.gameBoard[3][2] == 2 
+		&& currentScoreGame.gameBoard[4][1] == 2 && currentScoreGame.gameBoard[5][0] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[0][6] == 2 && currentScoreGame.gameBoard[1][5] == 2 
+		&& currentScoreGame.gameBoard[2][4] == 2 && currentScoreGame.gameBoard[3][3] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[1][5] == 2 && currentScoreGame.gameBoard[2][4] == 2 
+		&& currentScoreGame.gameBoard[3][3] == 2 && currentScoreGame.gameBoard[4][2] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[2][4] == 2 && currentScoreGame.gameBoard[3][3] == 2 
+		&& currentScoreGame.gameBoard[4][2] == 2 && currentScoreGame.gameBoard[5][1] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[1][6] == 2 && currentScoreGame.gameBoard[2][5] == 2 
+		&& currentScoreGame.gameBoard[3][4] == 2 && currentScoreGame.gameBoard[4][3] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[2][5] == 2 && currentScoreGame.gameBoard[3][4] == 2 
+		&& currentScoreGame.gameBoard[4][3] == 2 && currentScoreGame.gameBoard[5][2] == 2)
+			{currentScoreGame.player2Score++;}
+	if(currentScoreGame.gameBoard[2][6] == 2 && currentScoreGame.gameBoard[3][5] == 2 
+		&& currentScoreGame.gameBoard[4][4] == 2 && currentScoreGame.gameBoard[5][3] == 2)
+			{currentScoreGame.player2Score++;}
+}
+
