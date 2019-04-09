@@ -12,12 +12,109 @@ using namespace std;
 
 //function prototypes
 void countScore(gameStatus &currentScoreGame);
-int getUtility(gameStatus currentUtility);
+int getUtility(gameStatus utilityGame, long aiID);
 vector<int> orderMoves(gameStatus currentMove);
 int checkPlay(int column, gameStatus currentCheckPlay);
+void aiPlaySmart(gameStatus &currentAIGame, long humanID, long aiID, int moveCount, int depthLimit);
+int minPlayer(gameStatus currentMinGame, long humanID, long aiID, int moveCount, int depthLimit, int &alpha, int &beta);
+int maxPlayer(gameStatus currentMaxGame, long humanID, long aiID, int moveCount, int depthLimit, int &alpha, int &beta);
+int playPiece(int column, gameStatus &currentPlayGame);
+void printGameBoard(gameStatus &currentPrintGame);
+
+int BOARDS_EXAMINED(0);
+
+int maxPlayer(gameStatus currentMaxGame, long humanID, long aiID, int moveCount, int depthLimit, int &alpha, int &beta){
+    //check for terminal condition
+    if(moveCount == depthLimit){ 
+        cout << "Scored from Max: " << getUtility(currentMaxGame, aiID) << endl << endl;
+        return getUtility(currentMaxGame, aiID); 
+    }
+    currentMaxGame.currentTurn = aiID;    
+    //copy gameStatus
+    int i(0), maxBest(alpha), minBest(beta), score;
+    
+    //get move order and iterate through possible moves. 
+    vector<int> moves = orderMoves(currentMaxGame);
+    for(i = 0; i < moves.size(); i++){
+        gameStatus maxGame(currentMaxGame);
+        if((playPiece(moves[i], maxGame)) == 1){ 
+            cout << "TEST THIS MOVE FROM MAX LOOP" << endl;
+            printGameBoard(maxGame);
+            score = minPlayer(maxGame, humanID ,aiID, maxGame.pieceCount, depthLimit, maxBest, minBest);
+            if(score >= minBest) {
+                cout << "PRUNED FROM MAX" << endl;    
+                return score;
+            }
+            if(score > maxBest) {
+                maxBest = score;
+                cout << "NEW BEST MAX FOUND: " << score << " COL: " << moves[i] << endl;
+            }
+        } 
+    }
+    return score;
+}
+
+int minPlayer(gameStatus currentMinGame, long humanID, long aiID, int moveCount, int depthLimit, int &alpha, int &beta){
+    //check for terminal condition
+    if(moveCount == depthLimit){ 
+        cout << "Scored from Min: " << getUtility(currentMinGame, aiID) << endl << endl;
+        return getUtility(currentMinGame, aiID); 
+    }
+    currentMinGame.currentTurn = humanID;
+
+    //copy gameStatus
+    int i(0), maxBest(alpha), minBest(beta), score;
+
+    //get move order and iterate through possible moves. 
+    vector<int> moves = orderMoves(currentMinGame);
+    for(i = 0; i < moves.size(); i++){
+        gameStatus minGame(currentMinGame);
+        if((playPiece(moves[i], minGame)) == 1){ 
+            cout << "TEST THIS MOVE FROM MIN LOOP" << endl;
+            printGameBoard(minGame);
+            score = maxPlayer(minGame, humanID, aiID, minGame.pieceCount, depthLimit, maxBest, minBest);
+            if(score <= maxBest) {
+                cout << "PRUNED FROM MIN" << endl;    
+                return score;
+            }
+            if(score < minBest) {
+                minBest = score;
+                cout << "NEW BEST MIN FOUND: " << score << " COL: " << moves[i] << endl;
+            }
+        } 
+    }
+    return score;
+}
 
 
-//ai play minimax, minPlayer, maxPlayer, orderMoves, evalfunction  *****TODO********
+
+
+void aiPlaySmart(gameStatus &currentAIGame, long humanID, long aiID, int moveCount, int depthLimit){
+        
+    //initialize alpha and beta, and aiBestMove.  Copy current gameStatus
+    int maxPlayerChoice(-9999), minPlayerChoice(9999), aiBestMove(-1); 
+    int i, score;
+    //gameStatus aiGame(currentAIGame);
+
+    //get move order and iterate through possible moves. 
+    vector<int> moves = orderMoves(currentAIGame);
+    for(i = 0; i < moves.size(); i++){
+        gameStatus aiGame(currentAIGame);
+        if((playPiece(moves[i], aiGame)) == 1){
+            cout << "TEST THIS MOVE FROM AI LOOP" << endl;
+            printGameBoard(aiGame);
+            score = minPlayer(aiGame, humanID, aiID, aiGame.pieceCount, depthLimit, maxPlayerChoice, minPlayerChoice);
+            cout << score << endl;
+            if(score > maxPlayerChoice){
+                maxPlayerChoice = score;
+                aiBestMove = moves[i];
+                cout << "NEW AI MOVE FOUND AT COL: " << moves[i] << " WITH SCORE: " << score << endl << endl;
+            }
+        } 
+    }
+    int m = playPiece(aiBestMove, currentAIGame);    
+}
+
 
 //utiltty function
 int getUtility(gameStatus utilityGame, long aiID){
@@ -110,7 +207,8 @@ int playPiece(int column, gameStatus &currentPlayGame){
 		if(currentPlayGame.gameBoard[i][column] == 0){
 			currentPlayGame.gameBoard[i][column] = currentPlayGame.currentTurn;
 			currentPlayGame.pieceCount++;
-			return 1;
+		        BOARDS_EXAMINED++;
+                	return 1;
 		}
 	}
   return 0;
@@ -174,7 +272,7 @@ int main(int argc, char ** argv)
         //get command line inputs for next to move and file
         char * input = command_line[2]; 
         char * next_to_move = command_line [3];
-        int depthLimit = atoi(command_line[4]);
+        int dl = atoi(command_line[4]);
         char  humanOut[10] = "human.txt";
         char  cpuOut[13] = "computer.txt";
         char  humanTurn[11] = "human-next";
@@ -227,7 +325,9 @@ int main(int argc, char ** argv)
             if(strcmp(next_to_move, "computer-next") == 0){
                 currentGame.currentTurn = cpu;
                 std::cout << "CPU plays:" << std::endl;    
-                aiPlayRand(currentGame);
+                BOARDS_EXAMINED = 0;
+                aiPlaySmart(currentGame, human, cpu, currentGame.pieceCount, (currentGame.pieceCount + dl));
+                //aiPlayRand(currentGame);
                 currentGame.gameFile = fopen(cpuOut, "w");
                 currentGame.currentTurn = human;
                 if (currentGame.gameFile != 0){
@@ -238,7 +338,6 @@ int main(int argc, char ** argv)
                 }
                 next_to_move = humanTurn;
             } else if (strcmp(next_to_move, "human-next") == 0){
-                //make sure that it wont break if input file has current turn set with one number but human/comp player set at prompt to be opposite
                 currentGame.currentTurn = human;
                 int move(-1);
                 std::cout << "3n73r y0ur m0v3, hum4n...(column number 0 - 6)" << std::endl;
